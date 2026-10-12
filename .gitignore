@@ -1,0 +1,37 @@
+# Build and generated files
+build/
+out/
+install/
+cmake-build-*/
+CMakeUserPresets.json
+
+# Runtime and large assets (store these outside Git or with Git LFS)
+data/raw/*
+data/processed/*
+models/*.pt
+models/*.onnx
+models/*.engine
+models/*.trt
+*.mp4
+*.avi
+*.mkv
+*.bag
+
+# IDE and local files
+.cache/
+.vscode/settings.json
+.idea/
+compile_commands.json
+.DS_Store
+Thumbs.db
+
+# Python tooling
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+
+# Keep directory documentation and placeholders
+!data/raw/README.md
+!data/processed/README.md
+!models/README.md
