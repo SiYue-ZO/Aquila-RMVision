@@ -2,7 +2,7 @@
 
 Aquila 战队 RoboMaster 视觉组的装甲板识别与自瞄研究仓库。
 
-当前仓库处于**基座阶段**：只提供现代 C++ / CMake 的可运行 Hello World、工程约定、调研结论和开发计划，尚未实现相机采集、装甲板检测、YOLO 推理、数字识别、PnP、跟踪、弹道解算或串口通信。
+当前仓库处于**基座阶段**：提供现代 C++ / CMake 的 Hello World 和一个使用模拟数据跑通 `camera → detector → tracker` 的最小组件 Demo，尚未接入真实相机、装甲板检测模型、数字识别、PnP、弹道解算或串口通信。
 
 ## 当前环境与要求
 
@@ -22,19 +22,22 @@ CMake 不直接编译 C++。它先读取 `CMakeLists.txt`，检查编译器并�
 
 ```bash
 # Ubuntu/Debian 示例：安装 OpenCV C++ 开发包
-sudo apt update
-sudo apt install -y libopencv-dev
+sudo apt install libopencv-dev
 
 cmake --preset debug
 cmake --build --preset debug
 ./build/debug/bin/rmvision_hello
+
+# 运行最小组件 Demo
+./build/debug/bin/rmvision_demo
 ```
 
 三条命令分别表示：
 
 1. `cmake --preset debug`：读取 `CMakePresets.json` 中的 `debug` 配置，检查 C++ 编译器和 OpenCV 4，并在 `build/debug/` 生成构建文件。该配置使用 Debug 模式，并打开编译命令导出。
-2. `cmake --build --preset debug`：调用底层构建工具，编译 `src/hello_world.cpp`，链接 OpenCV，生成 `build/debug/bin/rmvision_hello`。
-3. `./build/debug/bin/rmvision_hello`：运行程序，输出 Hello World、OpenCV 版本和示例矩阵尺寸。
+2. `cmake --build --preset debug`：调用底层构建工具，编译 Hello World 和最小组件 Demo，链接 OpenCV。
+3. `./build/debug/bin/rmvision_hello`：运行 Hello World，输出 OpenCV 版本和示例矩阵尺寸。
+4. `./build/debug/bin/rmvision_demo`：运行模拟的相机、检测器和跟踪器，输出每帧的目标跟踪结果。
 
 预设默认使用系统的 Unix Makefiles，因此 Linux 上不需要额外安装 Ninja。Windows 或其他生成器可以通过本机的 `CMakeUserPresets.json` 覆盖，不要修改团队共享的预设。
 
@@ -108,7 +111,7 @@ cmake --build --preset debug
 
 ### 常见问题
 
-- **找不到 C++ 编译器**：安装 GCC/G++ 或 Clang，并重新执行 `cmake --preset debug`。
+- **找不到 C++ 编译器**：安装 GCC/G++ 或 Clang，并重新执行 `cmake --preset debug`。(msvc也行)
 - **找不到 OpenCV**：确认已安装 OpenCV 4 的 C++ 开发包；Ubuntu/Debian 可执行 `sudo apt install -y libopencv-dev`，然后重新执行 `cmake --preset debug`。
 - **生成器不匹配**：同一个构建目录不能在 Ninja 和 Unix Makefiles 之间直接切换，删除对应的 `build/<配置>/` 后重新配置。
 - **程序路径不存在**：先确认 `cmake --build --preset debug` 成功，再运行 `./build/debug/bin/rmvision_hello`。
@@ -117,7 +120,7 @@ cmake --build --preset debug
 ## 仓库导航
 
 ```text
-src/                    当前唯一程序：Hello World
+src/                    组件代码和两个可执行入口：Hello World、最小 Demo
 models/                 模型元数据约定，不提交模型二进制
 data/raw, data/processed/数据说明与后续数据集
 docs/research.md        调研资料、技术决策和待确认问题
