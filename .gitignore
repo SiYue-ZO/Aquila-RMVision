@@ -35,3 +35,7 @@ venv/
 !data/raw/README.md
 !data/processed/README.md
 !models/README.md
+
+# 测试媒体仅保留说明文档，图片、视频等素材不提交
+/tests/media/*
+!/tests/media/README.md

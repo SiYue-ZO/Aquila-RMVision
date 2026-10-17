@@ -2,14 +2,14 @@
 
 Aquila 战队 RoboMaster 视觉组的装甲板识别与自瞄研究仓库。
 
-当前仓库处于**基座阶段**：提供现代 C++ / CMake 的 Hello World 和一个使用模拟数据跑通 `camera → detector → tracker` 的最小组件 Demo，尚未接入真实相机、装甲板检测模型、数字识别、PnP、弹道解算或串口通信。
+当前已实现第一个算法组件：**传统 OpenCV 装甲板检测器**。`rmvision_demo` 从图片读取一帧，完成红蓝灯条分割、几何配对和去重，并保存带四点标注的结果；保留 Hello World 作为构建验证入口。真实相机、数字识别、PnP、弹道解算和串口通信尚未接入。
 
 ## 当前环境与要求
 
 - CMake 3.20 或更高版本
 - 支持 C++20 的编译器（Ubuntu 22.04/24.04 的 GCC/Clang、Windows MSVC 均可）
 - Make 或 Ninja（仓库预设默认使用 Unix Makefiles）
-- OpenCV 4（当前 Hello World 已使用）
+- OpenCV 4（core、imgproc、imgcodecs、highgui、videoio 模块）
 - YOLO/ONNX Runtime 暂不参与当前基座构建；硬件和部署平台确认后再锁版本
 
 ## 构建流程
@@ -28,16 +28,16 @@ cmake --preset debug
 cmake --build --preset debug
 ./build/debug/bin/rmvision_hello
 
-# 运行最小组件 Demo
+# 在仓库根目录运行图片检测，默认输入 tests/media/2color.png
 ./build/debug/bin/rmvision_demo
 ```
 
-三条命令分别表示：
+上述命令分别表示：
 
 1. `cmake --preset debug`：读取 `CMakePresets.json` 中的 `debug` 配置，检查 C++ 编译器和 OpenCV 4，并在 `build/debug/` 生成构建文件。该配置使用 Debug 模式，并打开编译命令导出。
-2. `cmake --build --preset debug`：调用底层构建工具，编译 Hello World 和最小组件 Demo，链接 OpenCV。
+2. `cmake --build --preset debug`：调用底层构建工具，编译 Hello World、检测器库和图片检测应用，链接 OpenCV。
 3. `./build/debug/bin/rmvision_hello`：运行 Hello World，输出 OpenCV 版本和示例矩阵尺寸。
-4. `./build/debug/bin/rmvision_demo`：运行模拟的相机、检测器和跟踪器，输出每帧的目标跟踪结果。
+4. `./build/debug/bin/rmvision_demo`：检测 `tests/media/2color.png`，输出检测数量和几何评分，结果保存到 `build/2color_detected.png`。
 
 预设默认使用系统的 Unix Makefiles，因此 Linux 上不需要额外安装 Ninja。Windows 或其他生成器可以通过本机的 `CMakeUserPresets.json` 覆盖，不要修改团队共享的预设。
 
@@ -117,10 +117,65 @@ cmake --build --preset debug
 - **程序路径不存在**：先确认 `cmake --build --preset debug` 成功，再运行 `./build/debug/bin/rmvision_hello`。
 - **修改后结果没有变化**：确认修改的是当前仓库目录中的文件，并重新执行配置和构建命令。
 
+## 传统装甲板检测器
+
+在仓库根目录执行，输入、输出路径也可以换成绝对路径：
+
+```bash
+./build/debug/bin/rmvision_demo tests/media/2color.png build/2color_detected.png
+
+# 仅检测指定颜色；显示窗口是可选的，不加 --show 时无需桌面环境
+./build/debug/bin/rmvision_demo tests/media/2color.png build/red_detected.png --color=red
+./build/debug/bin/rmvision_demo tests/media/2color.png build/blue_detected.png --color=blue --show
+```
+
+`tests/media/2color.png` 的基线结果为 **3 块装甲板：2 红、1 蓝**。图中 `#1/#2/#3` 仅表示本帧输出顺序，四点 `0/1/2/3` 分别表示左上、右上、右下、左下灯条端点。
+
+实现位于 `src/components/detector/`，沿用 `Detector::detect(ImageFrame)` 接口：
+
+1. 灰度亮度阈值与红蓝通道差分共同提取亮灯条，小尺度闭运算连接亮斑。
+2. 根据轮廓面积、灯条长宽比和倾角筛选候选。
+3. 同色灯条按长度一致性、方向差、中心高度差和归一化间距配对，排除跨过中间灯条的配对。
+4. 按几何评分选取配对，每根灯条最多使用一次，输出原图坐标下的四点和包围框。
+
+可调参数集中在 `TraditionalDetectorParams`，由应用创建并传入检测器；默认亮度阈值为 170，红蓝差分阈值为 70，适合当前样例。实际相机的曝光、光照和距离变化后需要重新验证参数。检测组件不执行文件读写、不创建窗口和线程。
+
+`DetectionFrame` 保留输入帧序号和采集时间；`Detection` 增加颜色、大小类型和四点。`target_id=0` 表示数字未知，`confidence` 是几何评分；大小类型也只是按灯条间距比例粗分，尚未接入数字分类器和位姿解算。固定样例不能代表赛场精度，反光和遮挡仍需后续数据验证。
+
+开启并运行离线回归：
+
+```bash
+cmake --preset debug -DRMVISION_BUILD_TESTS=ON
+cmake --build --preset debug
+ctest --test-dir build/debug --output-on-failure
+```
+
+回归覆盖实际红蓝图片、颜色筛选、倾斜灯条、大小粗分、共用灯条去重，以及单灯条、异色灯条、白色高亮、角度/长度不匹配、空图和非法输入。窗口显示不参与自动测试。
+
+### 视频离线测试
+
+开启 `RMVISION_BUILD_TESTS` 并构建后，在仓库根目录执行：
+
+```bash
+./build/debug/bin/detector_video_test \
+  'tests/media/旋转装甲板.mp4' build/video_test/baseline
+```
+
+该工具复用检测器默认参数，顺序处理全部帧，无需显示窗口；不属于常规 CTest 回归。输出目录包含：
+
+- `annotated.mp4`：保留输入分辨率和帧率的检测标注视频。
+- `summary.txt`：检出帧数、最长连续未检出区间，以及检测调用的平均和 P95 耗时。
+- `frames.csv`、`detections.csv`：逐帧计数、耗时，以及每个候选的颜色、类型、几何评分和四点坐标。
+- `contact_sheet.jpg`、`first_detected.jpg`、`first_no_detection.jpg`：均匀抽帧预览及代表帧。
+
+当前旋转视频基线：647 帧中 24 帧有检测结果，合计 24 个红色 small 候选，最长连续未检出 246 帧（约 4.10 秒）。抽查第 0 帧可见部分红色亮斑的长宽比约为 1.82 和 1.13，低于当前灯条最小长宽比 2.0；运动模糊会使灯条变宽，现有静态图片参数不能稳定适应该视频。测试没有修改算法或默认参数。
+
+“有检出结果的帧占比”不等于准确率或召回率，后两者需要人工真值标注。耗时仅统计检测调用，不包含解码、绘制和编码；Debug 运行结果也不能直接代表部署性能。重复执行会覆盖同一输出目录的报告，需要比较实验时应使用不同目录。
+
 ## 仓库导航
 
 ```text
-src/                    组件代码和两个可执行入口：Hello World、最小 Demo
+src/                    组件代码和两个可执行入口：Hello World、图片检测应用
 models/                 模型元数据约定，不提交模型二进制
 data/raw, data/processed/数据说明与后续数据集
 docs/research.md        调研资料、技术决策和待确认问题
