@@ -12,16 +12,18 @@ struct ApplicationOptions {
     std::string output_path{"build/2color_detected.png"};
     ArmorColor target_color{ArmorColor::unknown};
     bool show_window{false};
+    std::string detector_config;
+    bool override_target_color{false};
 };
 
 class Application {
-public:
+  public:
     explicit Application(ApplicationOptions options = {}) : options_(std::move(options)) {}
 
     int run();
 
-private:
+  private:
     ApplicationOptions options_;
 };
 
-}  // namespace rmvision::runtime
+} // namespace rmvision::runtime

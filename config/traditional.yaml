@@ -1,0 +1,26 @@
+%YAML:1.0
+---
+# v2: 亮度为目标颜色通道值；v1 灰度阈值不可直接套用。
+config_version: 2
+target_color: both
+brightness_threshold: 200
+color_difference_threshold: 70
+min_light_area: 20.0
+min_light_length: 8.0
+min_light_aspect_ratio: 0.65
+max_light_aspect_ratio: 20.0
+max_light_tilt_deg: 45.0
+# 低于此长宽比时方向不可靠，以配对中心连线辅助估计并降低角点质量。
+reliable_light_aspect_ratio: 2.5
+max_length_ratio: 1.8
+max_angle_difference_deg: 20.0
+max_center_line_angle_deg: 25.0
+max_rectangular_error_deg: 25.0
+min_pair_distance_ratio: 1.0
+max_pair_distance_ratio: 4.5
+max_vertical_offset_ratio: 1.2
+big_armor_distance_ratio: 3.2
+min_pair_score: 0.45
+pattern_score_weight: 0.4
+pattern_brightness_threshold: 140
+min_blob_pattern_score: 0.08

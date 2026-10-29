@@ -1,15 +1,15 @@
 #include "runtime/application.hpp"
 
 #include "components/detector/detector.hpp"
-
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc.hpp>
+#include "runtime/detector_config.hpp"
 
 #include <algorithm>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 #include <stdexcept>
 #include <vector>
 
@@ -29,13 +29,14 @@ int Application::run() {
         throw std::runtime_error("Output must not overwrite the input image");
     }
 
-    components::TraditionalDetectorParams params;
-    params.target_color = options_.target_color;
+    auto params = loadDetectorParams(options_.detector_config);
+    if (options_.override_target_color || options_.target_color != ArmorColor::unknown)
+        params.target_color = options_.target_color;
     components::TraditionalArmorDetector detector(params);
     const auto start = std::chrono::steady_clock::now();
     const auto result = detector.detect(frame);
-    const auto elapsed = std::chrono::duration<double, std::milli>(
-        std::chrono::steady_clock::now() - start);
+    const auto elapsed =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start);
 
     // 可视化与文件读写放在应用层，检测组件只返回观测结果。
     auto annotated = frame.image.clone();
@@ -60,10 +61,10 @@ int Application::run() {
         const auto label = cv::format("#%zu %s %s score=%.2f", i + 1, name, type, armor.confidence);
         const cv::Point label_position(std::max(5, armor.bounding_box.x),
                                        std::max(25, armor.bounding_box.y - 12));
-        cv::putText(annotated, label, label_position, cv::FONT_HERSHEY_SIMPLEX, 0.65,
-                    {0, 0, 0}, 4, cv::LINE_AA);
-        cv::putText(annotated, label, label_position, cv::FONT_HERSHEY_SIMPLEX, 0.65,
-                    color, 2, cv::LINE_AA);
+        cv::putText(annotated, label, label_position, cv::FONT_HERSHEY_SIMPLEX, 0.65, {0, 0, 0}, 4,
+                    cv::LINE_AA);
+        cv::putText(annotated, label, label_position, cv::FONT_HERSHEY_SIMPLEX, 0.65, color, 2,
+                    cv::LINE_AA);
         std::cout << "armor=" << i + 1 << " color=" << name << " type=" << type
                   << " score=" << std::fixed << std::setprecision(3) << armor.confidence
                   << " box=" << armor.bounding_box << '\n';
@@ -88,4 +89,4 @@ int Application::run() {
     return 0;
 }
 
-}  // namespace rmvision::runtime
+} // namespace rmvision::runtime

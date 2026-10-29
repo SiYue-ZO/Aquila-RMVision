@@ -10,6 +10,7 @@ TrackState SimpleTracker::update(const DetectionFrame& detections) {
             .source_sequence = detections.source_sequence,
             .center = cv::Point2f(),
             .confidence = 0.0F,
+            .capture_time = detections.capture_time,
         };
     }
 
@@ -18,11 +19,11 @@ TrackState SimpleTracker::update(const DetectionFrame& detections) {
         .valid = true,
         .target_id = detection.target_id,
         .source_sequence = detections.source_sequence,
-        .center = cv::Point2f(
-            detection.bounding_box.x + detection.bounding_box.width / 2.0F,
-            detection.bounding_box.y + detection.bounding_box.height / 2.0F),
+        .center = cv::Point2f(detection.bounding_box.x + detection.bounding_box.width / 2.0F,
+                              detection.bounding_box.y + detection.bounding_box.height / 2.0F),
         .confidence = detection.confidence,
+        .capture_time = detections.capture_time,
     };
 }
 
-}  // namespace rmvision::components
+} // namespace rmvision::components
