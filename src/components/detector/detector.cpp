@@ -1,6 +1,7 @@
 #include "components/detector/detector.hpp"
 
 #include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -274,6 +275,47 @@ DetectionFrame TraditionalArmorDetector::detect(const ImageFrame& frame) {
                   return a.bounding_box.x < b.bounding_box.x;
               });
     return result;
+}
+
+/**
+ * @brief 传入并保存相机相关参数
+ * @param camera_matrix_temp 相机内参矩阵
+ * @param distCoeffs_temp 相机畸变系数
+ */
+Armor_PnPsolver::Armor_PnPsolver(const std::array<double,9> &camera_matrix_temp,const std::vector<double> &distCoeffs_temp):
+camera_matrix(cv::Mat(3, 3, CV_64F, const_cast<double *>(camera_matrix_temp.data())).clone()),
+distCoeffs(cv::Mat(1, 5, CV_64F, const_cast<double *>(distCoeffs_temp.data())).clone())
+{
+    constexpr float Armor_length_half = Armor_length / 2;
+    constexpr float Armor_height_half = Armor_height / 2;
+
+ 
+    Armor_points3d = {{
+        {-Armor_length_half,Armor_height_half,0},
+        {Armor_length_half,Armor_height_half,0},
+        {Armor_length_half,-Armor_height_half,0},
+        {-Armor_length_half,-Armor_height_half,0}
+    }};
+}
+
+/**
+ * @brief 根据最后一个检测目标的四个角点求解装甲板相对相机的位姿。
+ * @param Armor_points2d 检测结果，detections 不可为空；角点顺序为左上、右上、右下、左下。
+ * @param rvec 输出的旋转向量，表示装甲板坐标系到相机坐标系的旋转。
+ * @param tvec 输出的平移向量，表示装甲板原点在相机坐标系中的位置，单位为米。
+ * @return 约定求解成功返回 true，失败返回 false；当前 PnP 求解调用尚未补全。
+ */
+bool Armor_PnPsolver::PnPsolver(const DetectionFrame &Armor_points2d,cv::Mat &rvec,cv::Mat &tvec)
+{
+    
+    if(Armor_points2d.detections.empty() or Armor_points2d.detections.back().corners.empty())
+    {
+        throw std::runtime_error("目前未识别到装甲板");
+    }
+
+    std::array<cv::Point2f,4> Armor_Points2d_ = Armor_points2d.detections.back().corners; 
+
+    return cv::solvePnP(Armor_points3d,Armor_Points2d_,camera_matrix,distCoeffs,rvec,tvec);
 }
 
 }  // namespace rmvision::components

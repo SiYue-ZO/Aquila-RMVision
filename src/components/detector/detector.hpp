@@ -32,6 +32,7 @@ struct TraditionalDetectorParams {
     float big_armor_distance_ratio{3.2F};  // 仅按几何比例粗分大小装甲。
 };
 
+
 class TraditionalArmorDetector final : public Detector {
 public:
     explicit TraditionalArmorDetector(TraditionalDetectorParams params = {});
@@ -43,4 +44,21 @@ private:
     TraditionalDetectorParams params_;
 };
 
+class Armor_PnPsolver{
+public:
+    Armor_PnPsolver(const std::array<double,9> &camera_matrix_temp,const std::vector<double> &distCoeffs_temp);
+
+    bool PnPsolver(const DetectionFrame &Armor_points2d,cv::Mat &rvec,cv::Mat &tvec);
+private:
+    cv::Mat camera_matrix;
+    cv::Mat distCoeffs;
+
+    //单位：米（m）
+    static constexpr float Armor_length = 0.140;
+    static constexpr float Armor_height = 0.125;
+
+    //装甲板三维点，顺序为{左上，右上，右下，左下}
+    //点坐标形式为{x,y,z},x为装甲板长度，y为宽度，z为垂直于装甲板的轴，原点为装甲板中心
+    std::array<cv::Point3f,4> Armor_points3d;
+};
 }  // namespace rmvision::components
