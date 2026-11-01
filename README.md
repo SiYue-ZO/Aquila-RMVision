@@ -2,6 +2,10 @@
 
 Aquila 战队 RoboMaster 视觉组的装甲板识别与自瞄研究仓库。
 
+当前已实现第一个算法组件：**传统 OpenCV 装甲板检测器**。`rmvision_demo` 从图片读取一帧，完成红蓝灯条分割、几何配对和去重，并保存带四点标注的结果；`rmvision_ipcam` 可接入临时网络相机进行实时检测，并通过 `--pnp=true` 测试 PnP 位姿与距离，详见 [IPCam 测试说明](docs/ipcam.md)；保留 Hello World 作为构建验证入口。工业相机、数字识别、弹道解算和串口通信尚未接入。
+
+临时相机没有默认地址，每次测试需手动指定 `--url`：`./build/debug/bin/rmvision_ipcam --url="http://<IP>:<端口>/video"`，按 Q 或 Esc 退出。无窗口验证及参数说明见 [IPCam 接入说明](docs/ipcam.md)。
+
 ## 当前环境与要求
 
 - CMake 3.20 或更高版本
