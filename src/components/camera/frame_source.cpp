@@ -12,7 +12,7 @@ std::optional<ImageFrame> DemoFrameSource::next() {
     ImageFrame frame;
     frame.sequence = static_cast<std::uint64_t>(next_frame_);
     frame.capture_time = std::chrono::steady_clock::now();
-    frame.image = cv::Mat(480, 640, CV_8UC3, cv::Scalar(20, 20, 20));
+    frame.image = cv::Mat(480, 640,  CV_8UC3, cv::Scalar(20, 20, 20));
 
     ++next_frame_;
     return frame;

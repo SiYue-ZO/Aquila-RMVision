@@ -2,14 +2,12 @@
 
 Aquila 战队 RoboMaster 视觉组的装甲板识别与自瞄研究仓库。
 
-当前已实现第一个算法组件：**传统 OpenCV 装甲板检测器**。`rmvision_demo` 从图片读取一帧，完成红蓝灯条分割、几何配对和去重，并保存带四点标注的结果；保留 Hello World 作为构建验证入口。真实相机、数字识别、PnP、弹道解算和串口通信尚未接入。
-
 ## 当前环境与要求
 
 - CMake 3.20 或更高版本
 - 支持 C++20 的编译器（Ubuntu 22.04/24.04 的 GCC/Clang、Windows MSVC 均可）
 - Make 或 Ninja（仓库预设默认使用 Unix Makefiles）
-- OpenCV 4（core、imgproc、imgcodecs、highgui、videoio 模块）
+- OpenCV 4（core、imgproc、imgcodecs、highgui、videoio、calib3d 模块）
 - YOLO/ONNX Runtime 暂不参与当前基座构建；硬件和部署平台确认后再锁版本
 
 ## 构建流程
@@ -131,7 +129,7 @@ cmake --build --preset debug
 
 `tests/media/2color.png` 的基线结果为 **3 块装甲板：2 红、1 蓝**。图中 `#1/#2/#3` 仅表示本帧输出顺序，四点 `0/1/2/3` 分别表示左上、右上、右下、左下灯条端点。
 
-实现位于 `src/components/detector/`，沿用 `Detector::detect(ImageFrame)` 接口：
+实现位于 `src/components/detector/`，沿用 `Detector::detect(ImageFrame)` 接口： 
 
 1. 灰度亮度阈值与红蓝通道差分共同提取亮灯条，小尺度闭运算连接亮斑。
 2. 根据轮廓面积、灯条长宽比和倾角筛选候选。
@@ -175,7 +173,7 @@ ctest --test-dir build/debug --output-on-failure
 ## 仓库导航
 
 ```text
-src/                    组件代码和两个可执行入口：Hello World、图片检测应用
+src/                    组件代码和可执行入口：Hello World、图片检测、IPCam 实时检测
 models/                 模型元数据约定，不提交模型二进制
 data/raw, data/processed/数据说明与后续数据集
 docs/research.md        调研资料、技术决策和待确认问题
